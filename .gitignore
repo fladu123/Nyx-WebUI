@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+data/
+backend/data/
+backend/__pycache__/
+backend/**/*.py[cod]
+backend/*.db
+owl-watermark.txt
+watermark-test.html

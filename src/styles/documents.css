@@ -1,0 +1,11 @@
+.doc-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.doc-card { background: var(--night-1); border: 1px solid var(--night-3); border-radius: var(--radius); padding: 16px; }
+.doc-card-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.doc-card-title { font-size: 15px; color: var(--text-0); }
+.doc-card-meta { color: var(--text-2); font-size: 11px; margin-top: 8px; }
+.doc-editor { background: var(--night-1); border: 1px solid var(--night-3); border-radius: var(--radius); overflow: hidden; }
+.doc-editor textarea { width: 100%; min-height: 420px; background: transparent; border: none; color: var(--text-0); resize: vertical; padding: 18px; font-family: var(--mono); line-height: 1.6; font-size: 13px; outline: none; }
+.doc-preview { background: var(--night-1); border: 1px solid var(--night-3); border-radius: var(--radius); padding: 20px; line-height: 1.7; color: var(--text-1); }
+.doc-preview h1, .doc-preview h2, .doc-preview h3 { margin-bottom: 8px; }
+.doc-preview p, .doc-preview ul, .doc-preview ol { margin-bottom: 10px; }
+.doc-preview pre { background: var(--night-2); border: 1px solid var(--night-4); padding: 12px; border-radius: var(--radius-sm); overflow-x: auto; }
