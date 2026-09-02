@@ -24,6 +24,31 @@ ok() { printf '\033[1;32m✓\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 
+# Untracked local files (e.g. a copy of update.sh created by hand before its
+# first run) can block a fast-forward merge. Back them up instead of failing,
+# since git refuses to silently overwrite anything not under its control.
+resolve_untracked_conflicts() {
+  local target_ref="$1"
+  local incoming
+  incoming="$(git ls-tree -r --name-only "${target_ref}" 2>/dev/null || true)"
+  [[ -n "${incoming}" ]] || return 0
+
+  local moved=0 status path backup
+  while IFS= read -r -d '' entry; do
+    status="${entry:0:2}"
+    path="${entry:3}"
+    [[ "${status}" == "??" ]] || continue
+    grep -Fxq "${path}" <<<"${incoming}" || continue
+    backup="${path}.pre-update-$(date +%Y%m%d-%H%M%S)"
+    mv "${path}" "${backup}"
+    warn "Untracked '${path}' would be overwritten by the update — backed up to '${backup}'."
+    moved=1
+  done < <(git status --porcelain=v1 -z --untracked-files=all)
+
+  [[ "${moved}" -eq 1 ]] && ok "Conflicting local files backed up; continuing update."
+  return 0
+}
+
 [[ "${EUID}" -eq 0 ]] || die "Run this script as root: sudo ./update.sh"
 command -v git >/dev/null 2>&1 || die "git is required."
 [[ -d "${SRC_DIR}/.git" ]] || die "${SRC_DIR} is not a git checkout — clone the repo with git to use this script."
@@ -37,12 +62,14 @@ say "Fetching latest changes..."
 git fetch --all --tags --prune
 
 if [[ -n "${GIT_REF}" ]]; then
+  resolve_untracked_conflicts "${GIT_REF}"
   say "Checking out ${GIT_REF}..."
   git checkout "${GIT_REF}"
 fi
 
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 if [[ "${CURRENT_BRANCH}" != "HEAD" ]]; then
+  resolve_untracked_conflicts "origin/${CURRENT_BRANCH}"
   say "Pulling latest for branch '${CURRENT_BRANCH}'..."
   git pull --ff-only origin "${CURRENT_BRANCH}" \
     || die "Fast-forward pull failed — there are local commits or edits in ${SRC_DIR}. Resolve manually, then re-run."
