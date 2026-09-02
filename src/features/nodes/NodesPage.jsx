@@ -12,6 +12,8 @@ export default function NodesPage({ nodes, onRefresh }) {
   const [scanSubnet, setScanSubnet] = useState('');
   const [scanResults, setScanResults] = useState(null);
   const [addingIp, setAddingIp] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', priority: 1, mode: 'failover' });
 
   // Auto-probe on load
   useEffect(() => {
@@ -49,8 +51,34 @@ export default function NodesPage({ nodes, onRefresh }) {
 
   const toggleNode = async (node) => {
     try {
-      await nodesApi.updateNode(node.id, !node.enabled);
+      await nodesApi.updateNode(node.id, { enabled: !node.enabled });
       onRefresh();
+    } catch (error) {
+      toast('Failed to update node', 'error');
+    }
+  };
+
+  const startEdit = (node) => {
+    setEditingId(node.id);
+    setEditForm({ name: node.name, priority: node.priority, mode: node.mode });
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = async (nodeId) => {
+    if (!editForm.name.trim()) {
+      toast('Name cannot be empty', 'error');
+      return;
+    }
+    try {
+      await nodesApi.updateNode(nodeId, {
+        name: editForm.name.trim(),
+        priority: Number(editForm.priority),
+        mode: editForm.mode,
+      });
+      setEditingId(null);
+      onRefresh();
+      toast('Node updated', 'success');
     } catch (error) {
       toast('Failed to update node', 'error');
     }
@@ -120,30 +148,78 @@ export default function NodesPage({ nodes, onRefresh }) {
 
         {nodes.map((node) => {
           const p = probedMap[node.id] || {};
+          const isEditing = editingId === node.id;
           return (
-            <div key={node.id} className="list-item" style={{ flexWrap: 'wrap', gap: 10 }}>
+            <div key={node.id} className={`list-item ${!p.online ? 'offline' : ''}`} style={{ flexWrap: 'wrap', gap: 10 }}>
               <div className={`node-dot ${p.online ? 'online' : 'offline'}`} />
-              <div style={{ flex: 1 }}>
-                <div className="list-item-name">{node.name}</div>
-                <div className="list-item-meta">
-                  {node.url} · priority {node.priority} · {node.mode}
-                </div>
-                {p.online && (
-                  <div className="list-item-meta" style={{ marginTop: 2 }}>
-                    {p.latency_ms}ms · {(p.models || []).join(', ') || 'no models'}
+              <div style={{ flex: 1, minWidth: 200 }}>
+                {isEditing ? (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <input
+                      className="input"
+                      style={{ maxWidth: 180 }}
+                      value={editForm.name}
+                      onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                    />
+                    <input
+                      className="input"
+                      type="number"
+                      min={1}
+                      max={99}
+                      style={{ maxWidth: 80 }}
+                      value={editForm.priority}
+                      onChange={(e) => setEditForm((f) => ({ ...f, priority: e.target.value }))}
+                    />
+                    <select
+                      className="input"
+                      style={{ maxWidth: 140 }}
+                      value={editForm.mode}
+                      onChange={(e) => setEditForm((f) => ({ ...f, mode: e.target.value }))}
+                    >
+                      <option value="failover">Failover</option>
+                      <option value="loadbalance">Load balance</option>
+                    </select>
                   </div>
+                ) : (
+                  <>
+                    <div className="list-item-name">{node.name}</div>
+                    <div className="list-item-meta">
+                      {node.url} · priority {node.priority} · {node.mode}
+                    </div>
+                    {p.online && (
+                      <div className="list-item-meta" style={{ marginTop: 2 }}>
+                        {p.latency_ms}ms · {(p.models || []).join(', ') || 'no models'}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               <div className="list-item-actions">
-                <button
-                  className={`toggle ${node.enabled ? 'on' : ''}`}
-                  onClick={() => toggleNode(node)}
-                  style={{ marginRight: 8 }}
-                  title="Toggle node"
-                />
-                <button className="btn btn-ghost btn-sm btn-danger" onClick={() => removeNode(node.id)}>
-                  Remove
-                </button>
+                {isEditing ? (
+                  <>
+                    <button className="btn btn-sm btn-primary" onClick={() => saveEdit(node.id)}>
+                      Save
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={cancelEdit}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className={`toggle ${node.enabled ? 'on' : ''}`}
+                      onClick={() => toggleNode(node)}
+                      style={{ marginRight: 8 }}
+                      title="Toggle node"
+                    />
+                    <button className="btn btn-ghost btn-sm" onClick={() => startEdit(node)}>
+                      Edit
+                    </button>
+                    <button className="btn btn-ghost btn-sm btn-danger" onClick={() => removeNode(node.id)}>
+                      Remove
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           );

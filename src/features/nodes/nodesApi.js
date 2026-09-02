@@ -13,8 +13,8 @@ export const nodesApi = {
     return apiClient.post('/api/nodes', { name, url, priority, mode });
   },
 
-  async updateNode(nodeId, enabled) {
-    return apiClient.patch(`/api/nodes/${nodeId}`, { enabled });
+  async updateNode(nodeId, patch) {
+    return apiClient.patch(`/api/nodes/${nodeId}`, patch);
   },
 
   async deleteNode(nodeId) {
