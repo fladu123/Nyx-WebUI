@@ -4,13 +4,37 @@ import { chatApi } from './chatApi';
 import AutoTextarea from './AutoTextarea';
 import MessageContent from './MessageContent';
 import OwlIcon from '../../shared/icons/OwlIcon';
-import { Download, FileText, ImagePlus, Paperclip, Send, Trash2 } from 'lucide-react';
+import { Download, FileText, ImagePlus, Paperclip, Send, Sigma, Trash2 } from 'lucide-react';
 
 const COMPRESS_THRESHOLD = 30;
 
 // Vision model detection
 const VISION_MODELS = ['llava', 'moondream', 'minicpm-v', 'llama3.2-vision', 'bakllava', 'llava-phi3'];
 const TOOL_MODELS = ['llama3.1', 'llama3.2', 'llama3.3', 'mistral', 'mixtral', 'qwen2.5', 'command-r'];
+
+// Common LaTeX snippets rendered by KaTeX; cursorBack places the caret inside
+// the snippet's first empty {} instead of at the very end.
+const MATH_SNIPPETS = [
+  { label: '√', insert: '\\sqrt{}', cursorBack: 1, title: 'Square root' },
+  { label: 'aⁿ', insert: '^{}', cursorBack: 1, title: 'Superscript' },
+  { label: 'aₙ', insert: '_{}', cursorBack: 1, title: 'Subscript' },
+  { label: 'a⁄b', insert: '\\frac{}{}', cursorBack: 3, title: 'Fraction' },
+  { label: '∑', insert: '\\sum_{}^{}', cursorBack: 4, title: 'Sum' },
+  { label: '∫', insert: '\\int_{}^{}', cursorBack: 4, title: 'Integral' },
+  { label: 'π', insert: '\\pi', cursorBack: 0, title: 'Pi' },
+  { label: '∞', insert: '\\infty', cursorBack: 0, title: 'Infinity' },
+  { label: '±', insert: '\\pm', cursorBack: 0, title: 'Plus-minus' },
+  { label: '×', insert: '\\times', cursorBack: 0, title: 'Times' },
+  { label: '÷', insert: '\\div', cursorBack: 0, title: 'Divide' },
+  { label: '≤', insert: '\\leq', cursorBack: 0, title: 'Less or equal' },
+  { label: '≥', insert: '\\geq', cursorBack: 0, title: 'Greater or equal' },
+  { label: '≠', insert: '\\neq', cursorBack: 0, title: 'Not equal' },
+  { label: '≈', insert: '\\approx', cursorBack: 0, title: 'Approximately' },
+  { label: 'α', insert: '\\alpha', cursorBack: 0, title: 'Alpha' },
+  { label: 'β', insert: '\\beta', cursorBack: 0, title: 'Beta' },
+  { label: 'θ', insert: '\\theta', cursorBack: 0, title: 'Theta' },
+  { label: '°', insert: '^{\\circ}', cursorBack: 0, title: 'Degree' },
+];
 
 export default function ChatView({
   chatId,
@@ -37,10 +61,12 @@ export default function ChatView({
   const [temperature, setTemperature] = useState(0.8);
   const [showParams, setShowParams] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [showMath, setShowMath] = useState(false);
 
   const bottomRef = useRef();
   const imgInputRef = useRef();
   const fileInputRef = useRef();
+  const textareaRef = useRef(null);
 
   const isVision = model && VISION_MODELS.some((v) => model.toLowerCase().includes(v));
   const supportsTool = model && TOOL_MODELS.some((v) => model.toLowerCase().includes(v));
@@ -107,6 +133,29 @@ export default function ChatView({
       setCompressing(false);
     }
   };
+
+  // Inserts `before` + selection + `after` at the cursor. If nothing is
+  // selected, the caret lands `cursorBack` characters before the snippet's end.
+  const insertAtCursor = (before, after = '', cursorBack = 0) => {
+    const el = textareaRef.current;
+    const start = el ? el.selectionStart : input.length;
+    const end = el ? el.selectionEnd : input.length;
+    const selected = input.slice(start, end);
+    const snippet = `${before}${selected}${after}`;
+    const next = input.slice(0, start) + snippet + input.slice(end);
+    setInput(next);
+
+    const caretPos = selected ? start + snippet.length : start + snippet.length - cursorBack;
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(caretPos, caretPos);
+    });
+  };
+
+  const insertMath = (snippet, cursorBack = 0) => insertAtCursor(snippet, '', cursorBack);
+  const insertInlineMath = () => insertAtCursor('$', '$', 1);
+  const insertBlockMath = () => insertAtCursor('$$\n', '\n$$', 3);
 
   const send = async () => {
     if (!input.trim() && images.length === 0) return;
@@ -508,7 +557,44 @@ export default function ChatView({
           </div>
         )}
 
+        {showMath && (
+          <div className="math-panel">
+            <div className="math-panel-row">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={insertInlineMath}>
+                $x$ inline
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={insertBlockMath}>
+                $$x$$ block
+              </button>
+            </div>
+            <div className="math-panel-grid">
+              {MATH_SNIPPETS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  className="math-key"
+                  title={s.title}
+                  onClick={() => insertMath(s.insert, s.cursorBack)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="chat-input-box">
+          <button
+            type="button"
+            className={`btn btn-ghost btn-icon ${showMath ? 'active' : ''}`}
+            style={{ padding: '4px' }}
+            onClick={() => setShowMath((v) => !v)}
+            title="Math input"
+            aria-label="Math input"
+          >
+            <Sigma size={16} />
+          </button>
+
           {isVision && (
             <>
               <input
@@ -541,6 +627,7 @@ export default function ChatView({
           )}
 
           <AutoTextarea
+            ref={textareaRef}
             value={input}
             onChange={setInput}
             placeholder="Message"

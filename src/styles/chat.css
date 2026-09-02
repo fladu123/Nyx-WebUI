@@ -65,3 +65,9 @@
 .send-btn { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--night-0); flex-shrink: 0; }
 .send-btn:disabled { background: var(--night-4); cursor: not-allowed; }
 .chat-input-hints { display: flex; gap: 10px; align-items: center; padding: 6px 2px 0; font-size: 11px; color: var(--text-3); }
+.btn-icon.active { background: var(--accent-bg); color: var(--accent); }
+.math-panel { margin-bottom: 8px; padding: 10px; background: var(--night-2); border: 1px solid var(--night-4); border-radius: var(--radius-sm); }
+.math-panel-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.math-panel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 6px; }
+.math-key { padding: 6px 4px; border-radius: 6px; border: 1px solid var(--night-4); background: var(--night-3); color: var(--text-0); font-size: 14px; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+.math-key:hover { background: var(--night-4); border-color: var(--night-5); }

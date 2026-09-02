@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
-export default function AutoTextarea({ value, onChange, placeholder, disabled, onKeyDown }) {
+const AutoTextarea = forwardRef(function AutoTextarea({ value, onChange, placeholder, disabled, onKeyDown }, forwardedRef) {
   const ref = useRef(null);
+  useImperativeHandle(forwardedRef, () => ref.current);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -20,4 +21,6 @@ export default function AutoTextarea({ value, onChange, placeholder, disabled, o
       onKeyDown={onKeyDown}
     />
   );
-}
+});
+
+export default AutoTextarea;

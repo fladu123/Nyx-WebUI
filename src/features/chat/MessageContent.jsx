@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { BrainCircuit } from 'lucide-react';
+import 'katex/dist/katex.min.css';
 
 export default function MessageContent({ content, streaming }) {
   const [thinkOpen, setThinkOpen] = useState(true);
@@ -30,7 +33,8 @@ export default function MessageContent({ content, streaming }) {
 
       <div className="msg-content">
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeKatex]}
           components={{
             pre: ({ children }) => <>{children}</>,
             code: ({ className, children, ...props }) => {
