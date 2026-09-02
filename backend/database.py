@@ -487,7 +487,7 @@ def add_file(project_id, name, content):
 
 def get_files(project_id):
     conn = get_db()
-    r = rows(conn, "SELECT id, project_id, name, size, created_at FROM files WHERE project_id=?",
+    r = rows(conn, "SELECT id, project_id, name, content, size, created_at FROM files WHERE project_id=?",
              (project_id,))
     conn.close()
     return r
@@ -515,7 +515,7 @@ def add_chat_file(chat_id, name, content):
 
 def get_chat_files(chat_id):
     conn = get_db()
-    r = rows(conn, "SELECT id, chat_id, name, size, created_at FROM chat_files WHERE chat_id=?",
+    r = rows(conn, "SELECT id, chat_id, name, content, size, created_at FROM chat_files WHERE chat_id=?",
              (chat_id,))
     conn.close()
     return r
